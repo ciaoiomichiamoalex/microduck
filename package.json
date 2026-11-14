@@ -1,0 +1,17 @@
+{
+  "name": "microduck",
+  "version": "0.1.0",
+  "description": "Microduck: compagno da scrivania. Sempre sopra le finestre, mostra i terminali Claude Code e come sta il PC.",
+  "main": "main.js",
+  "private": true,
+  "scripts": {
+    "start": "electron .",
+    "prova": "node stato.js"
+  },
+  "dependencies": {
+    "three": "0.128.0"
+  },
+  "devDependencies": {
+    "electron": "44.5.0"
+  }
+}
