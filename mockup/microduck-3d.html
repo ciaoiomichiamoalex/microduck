@@ -1,0 +1,530 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Microduck 3D</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: a product-photo studio. The robot on a seamless backdrop takes the left; a quiet control column sits right. */
+:root {
+  --bg: #E8EBEF; --surface: #F6F7F9; --ink: #1B1F26; --muted: #556070; --line: #CBD2DB;
+  --accent: #E2571A; --on-accent: #FFFFFF; --stage-a: #F8F9FB; --stage-b: #D3D9E1;
+  --desk-a: #3D4B5C; --desk-b: #1E252E; --pill: rgba(20, 20, 24, 0.9); --pill-ink: #E9E5DD; --pill-teal: #2FA59A; --pill-grey: #A9A6A0;
+  --display: 'Space Grotesk', 'Segoe UI', system-ui, sans-serif;
+  --body: 'Inter', 'Segoe UI', system-ui, sans-serif;
+  --mono: 'JetBrains Mono', Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #14171C; --surface: #1C2027; --ink: #E9ECF1; --muted: #9AA4B2; --line: #2F3640;
+  --accent: #F47A3A; --on-accent: #1B1206; --stage-a: #2C333D; --stage-b: #171A20; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #14171C; --surface: #1C2027; --ink: #E9ECF1; --muted: #9AA4B2; --line: #2F3640;
+  --accent: #F47A3A; --on-accent: #1B1206; --stage-a: #2C333D; --stage-b: #171A20; color-scheme: dark }
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body { background: var(--bg); color: var(--ink); font: 15px/1.5 var(--body); padding-block: 28px 40px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.wrap { max-width: 1120px; margin: 0 auto; display: flex; flex-direction: column; gap: 22px; }
+.eyebrow { font: 500 11.5px var(--mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+h1 { font: 600 clamp(28px, 4vw, 40px)/1.1 var(--display); margin: 6px 0 8px; text-wrap: balance; }
+.lead { margin: 0; max-width: 62ch; color: var(--muted); }
+.grid { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 22px; align-items: start; }
+@media (max-width: 800px) { .grid { grid-template-columns: minmax(0, 1fr); } }
+.stage { position: relative; aspect-ratio: 4 / 5; max-height: 82vh; width: 100%; border-radius: 18px; overflow: hidden; background: radial-gradient(ellipse at 50% 38%, var(--stage-a), var(--stage-b)); border: 1px solid var(--line); }
+@media (max-width: 800px) { .stage { aspect-ratio: 1 / 1.15; } }
+#c3d { position: absolute; inset: 0; width: 100%; height: 100%; display: block; cursor: grab; touch-action: pan-y; }
+#c3d.presa { cursor: grabbing; }
+.hint { position: absolute; left: 0; right: 0; bottom: 12px; margin: 0; text-align: center; font: 11.5px var(--mono); color: var(--muted); pointer-events: none; }
+#noGl { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; padding: 24px; text-align: center; color: var(--muted); }
+.side { display: flex; flex-direction: column; gap: 20px; min-width: 0; }
+.gruppo { display: flex; flex-direction: column; gap: 9px; }
+h2 { font: 600 15px var(--display); margin: 0; }
+.fila { display: flex; flex-wrap: wrap; gap: 8px; }
+button { font: 500 13.5px var(--body); color: var(--ink); cursor: pointer; }
+.chip { height: 36px; padding: 0 14px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); display: inline-flex; align-items: center; gap: 8px; }
+.chip[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--on-accent); font-weight: 600; }
+.chip:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.punti { display: inline-flex; }
+.punti i { width: 13px; height: 13px; border-radius: 50%; margin-left: -4px; box-shadow: 0 0 0 1.5px var(--surface); }
+.punti i:first-child { margin-left: 0; }
+.scrivania { position: relative; height: 176px; border-radius: 14px; overflow: hidden; background: linear-gradient(160deg, var(--desk-a), var(--desk-b)); border: 1px solid var(--line); }
+#cDesk { position: absolute; right: 10px; bottom: 8px; width: 90px; height: 135px; }
+.colonnina { position: absolute; right: 108px; bottom: 12px; display: flex; flex-direction: column; align-items: flex-end; gap: 5px; font: 11px var(--mono); color: var(--pill-ink); }
+.pastiglia { display: flex; align-items: center; gap: 7px; padding: 4px 10px; border-radius: 999px; background: var(--pill); white-space: nowrap; }
+.pastiglia b { width: 8px; height: 8px; border-radius: 50%; }
+.pastiglia .barra { width: 54px; height: 5px; border-radius: 3px; background: rgba(255, 255, 255, 0.15); overflow: hidden; }
+.pastiglia .barra span { display: block; height: 100%; width: 21%; background: var(--pill-teal); }
+.nota { font: 11.5px var(--mono); color: var(--muted); margin: 0; }
+ul { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 6px; color: var(--muted); }
+ul strong { color: var(--ink); font-weight: 600; }
+</style>
+
+<main class="wrap">
+  <header>
+    <div class="eyebrow">Mockup · non ancora applicato</div>
+    <h1>Microduck in 3D</h1>
+    <p class="lead">Il modello è costruito pezzo per pezzo dalle foto del robot vero: testa lunga a pagnotta con la faccia incassata, occhio-fotocamera ad anello, becco incernierato, cavi, collo e gambe di servomotori. Giralo, cambiagli colore e fallo muovere.</p>
+  </header>
+
+  <div class="grid">
+    <section class="stage" aria-label="Microduck in 3D">
+      <canvas id="c3d"></canvas>
+      <p class="hint" id="hint">Trascina per girarlo · il muso segue il puntatore</p>
+      <div id="noGl" hidden>Questo browser non riesce ad avviare la grafica 3D (WebGL), quindi il modello non si vede.</div>
+    </section>
+
+    <aside class="side">
+      <div class="gruppo">
+        <h2>Colore</h2>
+        <div class="fila" id="colori" role="group" aria-label="Colore"></div>
+      </div>
+      <div class="gruppo">
+        <h2>Movimento</h2>
+        <div class="fila" role="group" aria-label="Movimento">
+          <button class="chip" type="button" id="m-idle" data-modo="idle" aria-pressed="true">Fermo</button>
+          <button class="chip" type="button" id="m-walk" data-modo="walk" aria-pressed="false">Cammina</button>
+          <button class="chip" type="button" id="m-talk" data-modo="talk" aria-pressed="false">Parla</button>
+          <button class="chip" type="button" id="m-sleep" data-modo="sleep" aria-pressed="false">Dorme</button>
+          <button class="chip" type="button" id="salta">Saltello</button>
+          <button class="chip" type="button" id="flip">Backflip</button>
+          <button class="chip" type="button" id="gira" aria-pressed="false">Gira da solo</button>
+        </div>
+      </div>
+      <div class="gruppo">
+        <h2>A grandezza vera sulla scrivania</h2>
+        <div class="scrivania">
+          <div class="colonnina" aria-hidden="true">
+            <div class="pastiglia"><b style="background: var(--pill-grey)"></b>nessuno ti aspetta</div>
+            <div class="pastiglia"><b style="background: var(--pill-teal)"></b>1 lavora</div>
+            <div class="pastiglia"><b style="background: var(--pill-grey)"></b>2 fermi</div>
+            <div class="pastiglia">CPU <span class="barra"><span></span></span> 21%</div>
+          </div>
+          <canvas id="cDesk" aria-label="Microduck a 90 pixel, come nell'app"></canvas>
+        </div>
+        <p class="nota">90 × 135 px, 12 fotogrammi al secondo · i numeri sono di esempio</p>
+      </div>
+      <div class="gruppo">
+        <h2>Cosa cambia se la applichi</h2>
+        <ul>
+          <li><strong>Il disegno piatto lascia il posto a questo modello.</strong> Serve la libreria Three.js (circa 600 KB), copiata nella cartella dell'app: la finestra non scarica niente da internet.</li>
+          <li><strong>Resta a 12 fotogrammi al secondo</strong>, come adesso, per non pesare sulla finestra trasparente.</li>
+          <li><strong>Colonnina, nuvoletta, pannello e battute non cambiano.</strong></li>
+          <li><strong>Se la grafica 3D non parte</strong>, torna il disegno piatto di oggi.</li>
+        </ul>
+      </div>
+      <div class="gruppo">
+        <h2>Dove non è uguale all'originale</h2>
+        <ul>
+          <li>Viti, staffe e scritte sui motori sono semplificate.</li>
+          <li>Le proporzioni sono stimate dalle foto, non da misure del robot.</li>
+        </ul>
+      </div>
+    </aside>
+  </div>
+</main>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(function () {
+  'use strict';
+  var el = function (id) { return document.getElementById(id); };
+  var riduci = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var canvas = el('c3d'), renderer;
+  try {
+    if (!window.THREE) throw new Error('three');
+    renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true, alpha: true });
+  } catch (e) { el('noGl').hidden = false; el('hint').hidden = true; return; }
+  renderer.outputEncoding = THREE.sRGBEncoding;
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  renderer.setClearColor(0x000000, 0);
+
+  // ---- helpers ----
+  var col = function (h) { return new THREE.Color(h).convertSRGBToLinear(); };
+  function mat(h, o) { return new THREE.MeshStandardMaterial(Object.assign({ color: col(h), roughness: 0.55, metalness: 0 }, o || {})); }
+  var clamp = function (v, a, b) { return Math.min(b, Math.max(a, v)); };
+  var sm = function (a, b, x) { var t = clamp((x - a) / (b - a), 0, 1); return t * t * (3 - 2 * t); };
+  function mesh(g, m, x, y, z) { var o = new THREE.Mesh(g, m); o.position.set(x || 0, y || 0, z || 0); o.castShadow = true; o.receiveShadow = true; return o; }
+  function rrShape(w, h, r) {
+    r = Math.min(r, w / 2 - 0.001, h / 2 - 0.001);
+    var s = new THREE.Shape(), x = -w / 2, y = -h / 2;
+    s.moveTo(x + r, y); s.lineTo(x + w - r, y); s.quadraticCurveTo(x + w, y, x + w, y + r);
+    s.lineTo(x + w, y + h - r); s.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+    s.lineTo(x + r, y + h); s.quadraticCurveTo(x, y + h, x, y + h - r);
+    s.lineTo(x, y + r); s.quadraticCurveTo(x, y, x + r, y);
+    return s;
+  }
+  // Box with soft edges: w × h × d, bevel b, corner radius cr on the w×h face.
+  function rbox(w, h, d, b, cr) {
+    b = b == null ? 0.012 : b;
+    var g = new THREE.ExtrudeGeometry(rrShape(w - 2 * b, h - 2 * b, cr || 0.01), { depth: d - 2 * b, bevelEnabled: true, bevelThickness: b, bevelSize: b, bevelSegments: 3, curveSegments: 10 });
+    g.translate(0, 0, -(d - 2 * b) / 2);
+    return g;
+  }
+  // Flat slab lying in XZ: width w (x), length len (z), thickness th (y).
+  function slab(w, len, th, cr) { var g = rbox(w, len, th, 0.012, cr); g.rotateX(-Math.PI / 2); return g; }
+  function polyShape(pts, r) {
+    var s = new THREE.Shape(), n = pts.length;
+    for (var i = 0; i < n; i++) {
+      var p = pts[i], a = pts[(i + n - 1) % n], b = pts[(i + 1) % n];
+      var va = [a[0] - p[0], a[1] - p[1]], vb = [b[0] - p[0], b[1] - p[1]];
+      var la = Math.hypot(va[0], va[1]), lb = Math.hypot(vb[0], vb[1]), ra = Math.min(r, la / 2), rb = Math.min(r, lb / 2);
+      var p1 = [p[0] + va[0] / la * ra, p[1] + va[1] / la * ra], p2 = [p[0] + vb[0] / lb * rb, p[1] + vb[1] / lb * rb];
+      if (i === 0) s.moveTo(p1[0], p1[1]); else s.lineTo(p1[0], p1[1]);
+      s.quadraticCurveTo(p[0], p[1], p2[0], p2[1]);
+    }
+    s.closePath();
+    return s;
+  }
+  // Side profile given as [z, y] points, extruded across x.
+  function extrudeZY(pts, width, r, b) {
+    var g = new THREE.ExtrudeGeometry(polyShape(pts, r), { depth: width - 2 * b, bevelEnabled: true, bevelThickness: b, bevelSize: b, bevelSegments: 3, curveSegments: 10 });
+    g.translate(0, 0, -(width - 2 * b) / 2);
+    g.rotateY(-Math.PI / 2);
+    return g;
+  }
+  function cylX(r, len) { var g = new THREE.CylinderGeometry(r, r, len, 32); g.rotateZ(Math.PI / 2); return g; }
+  function cylZ(r, len) { var g = new THREE.CylinderGeometry(r, r, len, 48); g.rotateX(Math.PI / 2); return g; }
+  // Rounded-box blob (superquadric). fn can reshape each vertex and return a 0/1 mask.
+  function superquad(a, b, c, k, fn) {
+    var g = new THREE.SphereGeometry(1, 96, 64);
+    g.rotateX(Math.PI / 2); g.rotateZ(Math.PI / 2); // poles on ±z, seam underneath
+    var p = g.attributes.position, mask = new Float32Array(p.count);
+    var pw = function (v) { return Math.sign(v) * Math.pow(Math.abs(v), k); };
+    for (var i = 0; i < p.count; i++) {
+      var v = [pw(p.getX(i)) * a, pw(p.getY(i)) * b, pw(p.getZ(i)) * c];
+      if (fn) mask[i] = fn(v) || 0;
+      p.setXYZ(i, v[0], v[1], v[2]);
+    }
+    g.computeVertexNormals();
+    g.userData.mask = mask;
+    return g;
+  }
+
+  // ---- materials ----
+  // Moulded plastic: a soft sheen over a matte base.
+  function plastic(h, o) { o = Object.assign({}, o || {}); delete o.clearcoat; delete o.clearcoatRoughness; return mat(h, Object.assign(o, { roughness: 0.55 })); }
+  // The sticker on each servo: pale label, a few printed lines.
+  var etichetta = (function () {
+    var c = document.createElement('canvas'); c.width = 128; c.height = 96;
+    var x = c.getContext('2d');
+    x.fillStyle = '#E4E3DE'; x.fillRect(0, 0, 128, 96);
+    x.fillStyle = '#2A2B2E'; x.fillRect(10, 12, 70, 12); x.fillRect(10, 34, 108, 5); x.fillRect(10, 46, 84, 5);
+    for (var i = 0; i < 18; i++) x.fillRect(10 + i * 6, 62, i % 3 ? 2 : 4, 22);
+    var t = new THREE.CanvasTexture(c); t.encoding = THREE.sRGBEncoding; return t;
+  })();
+  var M = {
+    shell: plastic('#F2F0EB', { side: THREE.DoubleSide }), face: mat('#BDBBB6', { side: THREE.DoubleSide, roughness: 0.8 }), cable: mat('#141416', { roughness: 0.42 }),
+    body: plastic('#F2F0EB'), beak: plastic('#F2671D', { roughness: 0.4 }), ring: plastic('#F7A51E', { roughness: 0.3, clearcoat: 0.6, clearcoatRoughness: 0.25 }), ringDark: mat('#D98B12'),
+    footTop: plastic('#F2671D', { roughness: 0.4 }), sole: plastic('#F7A51E', { roughness: 0.58, clearcoat: 0 }),
+    servo: mat('#17181B', { roughness: 0.46 }), metal: mat('#B9BEC6', { roughness: 0.35, metalness: 0.35 }),
+    label: new THREE.MeshStandardMaterial({ map: etichetta, roughness: 0.7 }), dark: mat('#0B0C0E', { roughness: 0.35 }),
+    screw: mat('#3A3D43', { roughness: 0.4, metalness: 0.3 }),
+    glass: mat('#07080A', { roughness: 0.06, metalness: 0.3 }), glint: new THREE.MeshBasicMaterial({ color: 0xffffff }),
+    coat: mat('#3A2C78', { roughness: 0.3 }),
+  };
+
+  // ---- the robot ----
+  // Proportions read off the product photos: a long loaf-shaped head that overhangs far past the toes, the neck
+  // at the front of a body that extends backward, bird legs (knee behind, shin coming forward).
+  var scene = new THREE.Scene();
+  var root = new THREE.Group(); scene.add(root);
+  var pelvis = new THREE.Group(); root.add(pelvis);
+  var L1 = 0.40, L2 = 0.44, AH = 0.17, H0 = 0.75, K0 = -1.25;
+  var PY = L1 * Math.cos(H0) + L2 * Math.cos(H0 + K0) + AH;
+  pelvis.position.y = PY;
+
+  // A surface from a (u, v) → [x, y, z] function.
+  function grid(nu, nv, f) {
+    var pos = [], idx = [], i, j;
+    for (i = 0; i <= nu; i++) for (j = 0; j <= nv; j++) { var p = f(i / nu, j / nv); pos.push(p[0], p[1], p[2]); }
+    for (i = 0; i < nu; i++) for (j = 0; j < nv; j++) {
+      var a = i * (nv + 1) + j, b = a + 1, c = a + nv + 1, d = c + 1;
+      idx.push(a, c, b, b, c, d);
+    }
+    var g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+    g.setIndex(idx); g.computeVertexNormals();
+    return g;
+  }
+  function holes(parent, list, r, m) { list.forEach(function (p) { parent.add(mesh(cylX(r, 0.012), m || M.screw, p[0], p[1], p[2])); }); }
+
+  // hips: a wide servo block with two silver U-brackets facing front
+  pelvis.add(mesh(rbox(0.52, 0.16, 0.30), M.servo, 0, 0, -0.02));
+  [-1, 1].forEach(function (s) {
+    pelvis.add(mesh(rbox(0.15, 0.11, 0.07, 0.01, 0.03), M.metal, s * 0.13, 0, 0.13));
+    pelvis.add(mesh(cylZ(0.03, 0.02), M.servo, s * 0.13, 0, 0.165));
+    pelvis.add(mesh(cylZ(0.012, 0.024), M.metal, s * 0.13, 0, 0.165));
+  });
+  // body: a rounded box, deeper than tall, sitting behind the neck, with its moulding seam
+  var BC = [0, 0.27, -0.10], BS = [0.31, 0.185, 0.34], BK = 0.5;
+  pelvis.add(mesh(superquad(BS[0], BS[1], BS[2], BK), M.body, BC[0], BC[1], BC[2]));
+  var seamPts = [];
+  for (var si = 0; si <= 96; si++) {
+    var sa = si / 96 * Math.PI * 2, cs = Math.cos(sa), sn = Math.sin(sa);
+    seamPts.push(new THREE.Vector3(0, Math.sign(sn) * Math.pow(Math.abs(sn), BK) * BS[1] * 1.004, Math.sign(cs) * Math.pow(Math.abs(cs), BK) * BS[2] * 1.004));
+  }
+  var seam = new THREE.Line(new THREE.BufferGeometry().setFromPoints(seamPts), new THREE.LineBasicMaterial({ color: 0x888888 }));
+  seam.position.set(BC[0], BC[1], BC[2]); pelvis.add(seam);
+
+  // neck: two stacked servos, side brackets with bolt holes, cables up to the head
+  var neck = new THREE.Group(); neck.position.set(0, 0.34, 0.22); pelvis.add(neck);
+  var NL = 0.50;
+  neck.add(mesh(rbox(0.2, 0.24, 0.24), M.servo, 0, 0.12, 0));
+  neck.add(mesh(rbox(0.2, 0.24, 0.24), M.servo, 0, 0.375, 0));
+  neck.add(mesh(new THREE.PlaneGeometry(0.05, 0.07), M.label, -0.045, 0.14, 0.1215));
+  neck.add(mesh(new THREE.PlaneGeometry(0.05, 0.07), M.label, -0.045, 0.39, 0.1215));
+  [-1, 1].forEach(function (s) {
+    neck.add(mesh(extrudeZY([[-0.07, 0.15], [0.07, 0.15], [0.07, 0.33], [-0.07, 0.33]], 0.014, 0.03, 0.004), M.metal, s * 0.108, 0, 0.01));
+    holes(neck, [[s * 0.115, 0.19, -0.02], [s * 0.115, 0.19, 0.04], [s * 0.115, 0.29, -0.02], [s * 0.115, 0.29, 0.04]], 0.011);
+    neck.add(mesh(cylX(0.034, 0.02), M.metal, s * 0.112, 0.46, 0.0));
+    // the bracket that ties the lower servo to the body
+    neck.add(mesh(extrudeZY([[-0.16, -0.01], [0.02, -0.01], [0.05, 0.10], [-0.10, 0.13]], 0.02, 0.04, 0.005), M.body, s * 0.118, 0, 0));
+    holes(neck, [[s * 0.128, 0.03, -0.09], [s * 0.128, 0.03, -0.02], [s * 0.128, 0.09, -0.06], [s * 0.128, 0.085, 0.01]], 0.01);
+  });
+  function cable(pts, r) {
+    var c = new THREE.CatmullRomCurve3(pts.map(function (p) { return new THREE.Vector3(p[0], p[1], p[2]); }));
+    return mesh(new THREE.TubeGeometry(c, 40, r, 8, false), M.cable);
+  }
+  neck.add(cable([[0.06, 0.10, -0.12], [0.10, 0.22, -0.22], [0.08, 0.40, -0.24], [0.05, NL + 0.03, -0.17]], 0.011));
+  neck.add(cable([[-0.05, 0.30, -0.12], [-0.10, 0.36, -0.20], [-0.07, 0.47, -0.21], [-0.04, NL + 0.03, -0.14]], 0.009));
+  neck.add(cable([[0.0, 0.02, -0.12], [0.03, -0.02, -0.2], [0.02, -0.07, -0.16]], 0.011));
+
+  // head: an arch lofted front to back. Flat top, rounded rear, open front with a thick rim and a recessed face.
+  var head = new THREE.Group(); head.position.set(0, NL, 0); neck.add(head);
+  var hm = head;
+  var Wd = 0.43, HH = 0.50, HL = 1.30, HB = 0.105, ZF = 0.81, TH = 0.035, REC = 0.11, EX = 2 / 2.35;
+  function arch(v, w, h) { var a = Math.PI * v, c = Math.cos(a), s = Math.sin(a); return [w * Math.sign(c) * Math.pow(Math.abs(c), EX), h * Math.pow(Math.max(0, s), EX)]; }
+  function hp(u) { return u < 0.5 ? 1 : Math.sqrt(Math.max(0, 1 - Math.pow((u - 0.5) / 0.5, 2.4))); }
+  function wp(u) { return u < 0.5 ? 1 : 1 - 0.14 * Math.pow((u - 0.5) / 0.5, 2); }
+  hm.add(mesh(grid(64, 56, function (s, v) {
+    var u = 1 - Math.pow(1 - s, 1.7), a = arch(v, Wd * wp(u), HH * hp(u));
+    return [a[0], HB + a[1], ZF - u * HL];
+  }), M.shell));
+  hm.add(mesh(grid(2, 56, function (u, v) { var a = arch(v, Wd - TH * u, HH - TH * u); return [a[0], HB + a[1], ZF]; }), M.shell));
+  hm.add(mesh(grid(4, 56, function (u, v) { var a = arch(v, Wd - TH, HH - TH); return [a[0], HB + a[1], ZF - REC * u]; }), M.shell));
+  hm.add(mesh(grid(10, 56, function (s, v) { var a = arch(v, (Wd - TH) * s, (HH - TH) * s); return [a[0], HB + a[1], ZF - REC]; }), M.face));
+  // beak: the upper plate runs under the whole shell and sticks out in front; the lower one hangs from the hinge ears
+  hm.add(mesh(slab(0.875, 1.40, 0.06, 0.1), M.beak, 0, HB - 0.03, 0.20));
+  hm.add(mesh(slab(0.80, 0.42, 0.045, 0.06), M.beak, 0, 0.022, -0.30));
+  var jaw = new THREE.Group(); jaw.position.set(0, 0.045, -0.11); hm.add(jaw);
+  jaw.add(mesh(slab(0.86, 1.02, 0.035, 0.1), M.beak, 0, -0.0175, 0.49));
+  jaw.add(mesh(slab(0.78, 0.9, 0.01, 0.08), M.dark, 0, 0.002, 0.5));
+  [-1, 1].forEach(function (s) {
+    hm.add(mesh(extrudeZY([[-0.27, HB - 0.06], [0.05, HB - 0.06], [-0.10, HB + 0.17]], 0.03, 0.04, 0.008), M.beak, s * (Wd + 0.008), 0, 0));
+    holes(hm, [[s * (Wd + 0.024), HB - 0.02, -0.17], [s * (Wd + 0.024), HB - 0.02, -0.04], [s * (Wd + 0.024), HB + 0.08, -0.105]], 0.013);
+  });
+  // eye: a chunky ring with the camera sunk in its hole, off-centre like the real one; a small sensor beside it
+  var eye = new THREE.Group(); eye.position.set(-0.10, HB + 0.25, ZF - REC); hm.add(eye);
+  var ringG = new THREE.LatheGeometry([[0.135, 0], [0.135, 0.105], [0.127, 0.124], [0.112, 0.132], [0.094, 0.132], [0.081, 0.124], [0.076, 0.105], [0.076, 0.03]].map(function (p) { return new THREE.Vector2(p[0], p[1]); }), 56);
+  ringG.rotateX(Math.PI / 2);
+  M.ring.side = THREE.DoubleSide;
+  eye.add(mesh(ringG, M.ring));
+  var lens = new THREE.Group(); eye.add(lens);
+  lens.add(mesh(cylZ(0.075, 0.07), M.dark, 0, 0, 0.035));
+  lens.add(mesh(new THREE.TorusGeometry(0.058, 0.012, 10, 40), M.servo, 0, 0, 0.072));
+  var glass = mesh(new THREE.SphereGeometry(0.05, 32, 16), M.glass, 0, 0, 0.07); glass.scale.z = 0.5; lens.add(glass);
+  lens.add(mesh(new THREE.TorusGeometry(0.036, 0.006, 8, 40), M.coat, 0, 0, 0.074));
+  lens.add(mesh(new THREE.SphereGeometry(0.011, 12, 8), M.glint, -0.018, 0.02, 0.092));
+  hm.add(mesh(rbox(0.075, 0.036, 0.02, 0.006, 0.014), M.dark, 0.17, HB + 0.25, ZF - REC + 0.008));
+  head.add(mesh(rbox(0.17, 0.05, 0.22), M.metal, 0, 0.0, 0.01));
+
+  // legs: hip servo, thigh with the big outer cover, two bars down to the ankle servo, two-tone foot
+  function gamba(side) {
+    var g = new THREE.Group(); g.position.set(side * 0.31, 0, -0.02); g.scale.x = side;
+    g.add(mesh(rbox(0.17, 0.2, 0.24), M.servo));
+    var thigh = new THREE.Group(); g.add(thigh);
+    thigh.add(mesh(rbox(0.17, L1, 0.16), M.servo, 0, -L1 / 2, 0));
+    // the white cover sits flat against the hip servo and the thigh: inner face touching, no gap
+    var cover = mesh(extrudeZY([[0.16, 0.11], [-0.17, 0.09], [-0.20, -L1 + 0.02], [-0.06, -L1 - 0.10], [0.10, -L1 + 0.10]], 0.045, 0.07, 0.012), M.body, 0.105, 0, 0);
+    thigh.add(cover);
+    cover.add(mesh(cylX(0.013, 0.012), M.screw, 0.021, 0.03, -0.10)); cover.add(mesh(cylX(0.013, 0.012), M.screw, 0.021, -L1, -0.04));
+    var knee = new THREE.Group(); knee.position.y = -L1; thigh.add(knee);
+    knee.add(mesh(cylX(0.06, 0.18), M.metal));
+    holes(knee, [[0.086, 0, 0], [-0.086, 0, 0]], 0.02, M.dark);
+    holes(knee, [[0.086, 0.036, 0], [0.086, -0.036, 0], [0.086, 0, 0.036], [0.086, 0, -0.036], [-0.086, 0.036, 0], [-0.086, -0.036, 0], [-0.086, 0, 0.036], [-0.086, 0, -0.036]], 0.008);
+    knee.add(mesh(rbox(0.016, L2, 0.055, 0.004), M.metal, 0.075, -L2 / 2, 0));
+    knee.add(mesh(rbox(0.016, L2, 0.055, 0.004), M.metal, -0.075, -L2 / 2, 0));
+    knee.add(mesh(rbox(0.135, 0.25, 0.17), M.servo, 0, -L2 + 0.115, 0));
+    var lab = mesh(new THREE.PlaneGeometry(0.07, 0.05), M.label, 0, -L2 + 0.14, 0.0855); knee.add(lab);
+    var foot = new THREE.Group(); foot.position.y = -L2; knee.add(foot);
+    foot.add(mesh(cylX(0.04, 0.275), M.metal));
+    holes(foot, [[0.137, 0, 0], [-0.137, 0, 0]], 0.016, M.dark);
+    foot.add(mesh(slab(0.31, 0.56, 0.07, 0.13), M.sole, 0, -0.135, 0.065));
+    foot.add(mesh(slab(0.31, 0.56, 0.045, 0.13), M.footTop, 0, -0.0775, 0.065));
+    [-1, 1].forEach(function (q) {
+      foot.add(mesh(extrudeZY([[-0.14, -0.06], [0.19, -0.06], [0.03, 0.065], [-0.11, 0.065]], 0.03, 0.035, 0.008), M.footTop, q * 0.115, 0, 0));
+      holes(foot, [[q * 0.131, -0.025, 0.10], [q * 0.131, -0.025, -0.07], [q * 0.131, 0.03, -0.075]], 0.011);
+    });
+    foot.add(mesh(rbox(0.2, 0.085, 0.03, 0.008, 0.02), M.footTop, 0, -0.015, -0.125));
+    pelvis.add(g);
+    return { thigh: thigh, knee: knee, foot: foot };
+  }
+  var gambaD = gamba(1), gambaS = gamba(-1);
+  // alza: lifts one foot (walking). piega: bends both legs, +1 crouched, -1 stretched. punta: toes down, in the air.
+  function posa(g, alza, piega, punta) {
+    var h = H0 + 0.25 * alza + 0.35 * (piega || 0), k = K0 - 0.35 * alza - 0.6 * (piega || 0);
+    g.thigh.rotation.x = h; g.knee.rotation.x = k; g.foot.rotation.x = -(h + k) + (punta || 0);
+  }
+  // Where the hips must sit for the feet to stay planted at a given bend.
+  function bacino(piega) {
+    var h = H0 + 0.35 * piega, hk = h + K0 - 0.6 * piega;
+    return { y: L1 * Math.cos(h) + L2 * Math.cos(hk) + AH, z: L1 * Math.sin(h) + L2 * Math.sin(hk) };
+  }
+  var Z0 = bacino(0).z;
+  // Value at p along [[p, value], ...] keyframes, eased between each pair.
+  function chiavi(p, a) {
+    for (var i = 1; i < a.length; i++) if (p <= a[i][0]) return a[i - 1][1] + (a[i][1] - a[i - 1][1]) * sm(a[i - 1][0], a[i][0], p);
+    return a[a.length - 1][1];
+  }
+  // The two one-shot moves: crouch, push off, fly, land on bent legs, stand up. The backflip adds a full turn backward.
+  var MOSSE = {
+    salto: { dura: 1.15, vola: [0.36, 0.74], alto: 0.55, giri: 0, piega: [[0, 0], [0.26, 1], [0.36, -0.7], [0.56, 0.35], [0.74, -0.5], [0.86, 0.8], [1, 0]] },
+    flip: { dura: 1.6, vola: [0.29, 0.78], alto: 0.8, giri: 1, piega: [[0, 0], [0.2, 1], [0.29, -0.8], [0.42, 1], [0.66, 1], [0.78, -0.4], [0.88, 0.9], [1, 0]] },
+  };
+
+  // ---- light, floor, cameras ----
+  scene.add(new THREE.HemisphereLight(0xffffff, 0x8a909c, 0.6));
+  var key = new THREE.DirectionalLight(0xffffff, 0.62); key.position.set(2, 8, 4); key.target.position.set(0, 1.1, 0);
+  key.castShadow = true; key.shadow.mapSize.set(2048, 2048); key.shadow.radius = 5; key.shadow.bias = -0.0006; key.shadow.normalBias = 0.02;
+  var sc = key.shadow.camera; sc.left = -3.5; sc.right = 3.5; sc.top = 3.5; sc.bottom = -3.5; sc.near = 1; sc.far = 20;
+  scene.add(key); scene.add(key.target);
+  var fill = new THREE.DirectionalLight(0xffffff, 0.22); fill.position.set(-4, 2, -3); scene.add(fill);
+  var floor = new THREE.Mesh(new THREE.PlaneGeometry(14, 14), new THREE.ShadowMaterial({ opacity: 0.2 }));
+  floor.rotation.x = -Math.PI / 2; floor.receiveShadow = true; floor.layers.set(1); scene.add(floor);
+
+  var TG = new THREE.Vector3(0, 1.18, 0.3), R = 7.3;
+  var cam = new THREE.PerspectiveCamera(26, 1, 0.1, 50); cam.layers.enable(1);
+  var deskCam = new THREE.PerspectiveCamera(20, 90 / 135, 0.1, 50);
+  deskCam.position.set(TG.x + 8.7 * Math.sin(-0.5) * Math.cos(0.1), TG.y + 8.7 * Math.sin(0.1), TG.z + 8.7 * Math.cos(-0.5) * Math.cos(0.1)); deskCam.lookAt(TG);
+  var desk = el('cDesk'), deskCtx = desk.getContext('2d'), pr = 1, W = 1, H = 1;
+  function misura() {
+    var r = canvas.getBoundingClientRect();
+    pr = Math.min(2, window.devicePixelRatio || 1); W = Math.max(1, r.width); H = Math.max(1, r.height);
+    renderer.setPixelRatio(pr); renderer.setSize(W, H, false);
+    cam.aspect = W / H; cam.updateProjectionMatrix();
+    desk.width = Math.round(90 * pr); desk.height = Math.round(135 * pr);
+  }
+  misura();
+  if (window.ResizeObserver) new ResizeObserver(misura).observe(canvas); else window.addEventListener('resize', misura);
+
+  // ---- colourways (from the product photos) ----
+  var COLORI = {
+    arancio: { nome: 'Bianco e arancio', shell: '#F2F0EB', face: '#BDBBB6', body: '#F2F0EB', beak: '#F2671D', ring: '#F7A51E', footTop: '#F2671D', sole: '#F7A51E' },
+    grigio: { nome: 'Grigio e giallo', shell: '#62656A', face: '#C9C8C4', body: '#6C6F74', beak: '#F4CF2A', ring: '#8C6BD6', footTop: '#F4CF2A', sole: '#8C6BD6' },
+    azzurro: { nome: 'Azzurro e arancio', shell: '#A9D6E8', face: '#C9C8C4', body: '#A9D6E8', beak: '#F2671D', ring: '#F5BE1E', footTop: '#F2671D', sole: '#F4B81E' },
+    lilla: { nome: 'Lilla e giallo', shell: '#B9A0DC', face: '#C9C8C4', body: '#B9A0DC', beak: '#F4CF2A', ring: '#7FD0E3', footTop: '#F4CF2A', sole: '#B9A0DC' },
+  };
+  function colora(k) {
+    var c = COLORI[k];
+    M.shell.color.copy(col(c.shell)); M.face.color.copy(col(c.face)); seam.material.color.copy(col(c.body)).multiplyScalar(0.5);
+    M.body.color.copy(col(c.body)); M.beak.color.copy(col(c.beak)); M.ring.color.copy(col(c.ring));
+    M.ringDark.color.copy(col(c.ring)).multiplyScalar(0.72); M.footTop.color.copy(col(c.footTop)); M.sole.color.copy(col(c.sole));
+    Array.prototype.forEach.call(el('colori').children, function (b) { b.setAttribute('aria-pressed', String(b.dataset.colore === k)); });
+  }
+  Object.keys(COLORI).forEach(function (k) {
+    var c = COLORI[k], b = document.createElement('button');
+    b.type = 'button'; b.className = 'chip'; b.id = 'col-' + k; b.dataset.colore = k;
+    var p = document.createElement('span'); p.className = 'punti';
+    [c.shell, c.beak, c.ring].forEach(function (h) { var i = document.createElement('i'); i.style.background = h; p.appendChild(i); });
+    b.appendChild(p); b.appendChild(document.createTextNode(c.nome));
+    b.addEventListener('click', function () { colora(k); });
+    el('colori').appendChild(b);
+  });
+  colora('arancio');
+
+  // ---- state, input ----
+  var S = { modo: 'idle', mossa: null, alto: 0, gira: false, yaw: -0.5, pitch: 0.14, presa: null, px: 0, py: 0, pt: -9, hy: 0, hp: 0, hr: 0, jaw: 0, eye: 1, neck: 0.1 };
+  Array.prototype.forEach.call(document.querySelectorAll('[data-modo]'), function (b) {
+    b.addEventListener('click', function () {
+      S.modo = b.dataset.modo;
+      Array.prototype.forEach.call(document.querySelectorAll('[data-modo]'), function (x) { x.setAttribute('aria-pressed', String(x === b)); });
+    });
+  });
+  el('salta').addEventListener('click', function () { if (!S.mossa) S.mossa = { tipo: 'salto', p: 0 }; });
+  el('flip').addEventListener('click', function () { if (!S.mossa) S.mossa = { tipo: 'flip', p: 0 }; });
+  el('gira').addEventListener('click', function () { S.gira = !S.gira; el('gira').setAttribute('aria-pressed', String(S.gira)); });
+  canvas.addEventListener('pointerdown', function (e) {
+    S.presa = { x: e.clientX, y: e.clientY, yaw: S.yaw, pitch: S.pitch, mouse: e.pointerType === 'mouse' };
+    canvas.classList.add('presa');
+    try { canvas.setPointerCapture(e.pointerId); } catch (x) { /* fine */ }
+  });
+  canvas.addEventListener('pointermove', function (e) {
+    var r = canvas.getBoundingClientRect();
+    if (S.presa) {
+      S.yaw = S.presa.yaw - (e.clientX - S.presa.x) * 0.008;
+      if (S.presa.mouse) S.pitch = clamp(S.presa.pitch + (e.clientY - S.presa.y) * 0.004, -0.12, 0.6);
+    } else {
+      S.px = clamp(((e.clientX - r.left) / r.width) * 2 - 1, -1, 1);
+      S.py = clamp(((e.clientY - r.top) / r.height) * 2 - 1, -1, 1);
+      S.pt = performance.now() / 1000;
+    }
+  });
+  var molla = function () { S.presa = null; canvas.classList.remove('presa'); };
+  canvas.addEventListener('pointerup', molla); canvas.addEventListener('pointercancel', molla);
+
+  // ---- animation ----
+  function aggiorna(t, dt) {
+    var k = Math.min(1, dt * 7);
+    if (S.gira && !S.presa) S.yaw += dt * 0.45;
+    var w = 0, hy = 0, hp = 0, hr = 0, jw = 0, ey = 1, nk = 0.1, by = 0, su = 0;
+    var calmo = riduci && S.modo === 'idle', vivo = t - S.pt < 2.5;
+    var rel = Math.atan2(Math.sin(S.yaw), Math.cos(S.yaw));
+    if (S.modo === 'walk') { w = Math.sin(t * Math.PI * 2 / 0.75); hr = w * 0.05; by = Math.abs(w) * 0.012; }
+    if (S.modo === 'sleep') { hp = 0.42; nk = 0.24; ey = 0.12; hy = 0.15; by = Math.sin(t * 1.1) * 0.006; }
+    else {
+      hy = clamp(rel * 0.6 + (vivo ? S.px * 0.35 : (calmo ? 0 : Math.sin(t * 0.45) * 0.22)), -0.75, 0.75);
+      hp = clamp(-S.pitch * 0.5 + (vivo ? S.py * 0.18 : (calmo ? 0 : Math.sin(t * 0.31) * 0.05)), -0.3, 0.3);
+      if (!calmo) { by += Math.sin(t * 1.9) * 0.006; if (t % 4.3 < 0.12) ey = 0.1; }
+      if (S.modo === 'talk') { jw = 0.05 + 0.26 * Math.abs(Math.sin(t * 8.5)) * (0.55 + 0.45 * Math.sin(t * 2.1)); hp += Math.sin(t * 4.2) * 0.03; }
+    }
+    var piega = 0, punta = 0, giro = 0;
+    if (S.mossa) {
+      var m = MOSSE[S.mossa.tipo];
+      S.mossa.p += dt / m.dura;
+      if (S.mossa.p >= 1) S.mossa = null;
+      else {
+        var p = S.mossa.p, q = clamp((p - m.vola[0]) / (m.vola[1] - m.vola[0]), 0, 1), aria = Math.sin(Math.PI * q);
+        piega = chiavi(p, m.piega);
+        su = m.alto * 4 * q * (1 - q);
+        punta = 0.45 * aria;
+        jw = Math.max(jw, 0.1 * aria);
+        w = 0; hr = 0;
+        if (m.giri) { giro = -2 * Math.PI * m.giri * (q - 0.6 * Math.sin(2 * Math.PI * q) / (2 * Math.PI)); hy = 0; hp = 0.2 * aria; nk = 0.1 - 0.2 * aria; }
+        else if (p < m.vola[0]) nk = 0.1 + 0.12 * piega;
+      }
+    }
+    // The body turns around its middle, not around the feet.
+    var CY = 1.15, CZ = 0.1, cg = Math.cos(giro), sg = Math.sin(giro);
+    S.alto = su;
+    root.rotation.set(giro, 0, w * 0.07);
+    root.position.set(0, su + CY - (CY * cg - CZ * sg), CZ - (CY * sg + CZ * cg));
+    var bc = bacino(piega);
+    pelvis.position.y = bc.y + by; pelvis.position.z = bc.z - Z0;
+    posa(gambaD, Math.max(0, w), piega, punta); posa(gambaS, Math.max(0, -w), piega, punta);
+    // The camera rises with a jump so the top of it stays in frame.
+    var cp = Math.cos(S.pitch), ty = TG.y + 0.45 * su;
+    cam.position.set(TG.x + R * Math.sin(S.yaw) * cp, ty + R * Math.sin(S.pitch), TG.z + R * Math.cos(S.yaw) * cp);
+    cam.lookAt(TG.x, ty, TG.z);
+    S.hy += (hy - S.hy) * k; S.hp += (hp - S.hp) * k; S.hr += (hr - S.hr) * k; S.neck += (nk - S.neck) * k;
+    S.jaw += (jw - S.jaw) * Math.min(1, dt * 18); S.eye += (ey - S.eye) * Math.min(1, dt * 22);
+    head.rotation.set(S.hp, S.hy, S.hr); neck.rotation.x = S.neck; jaw.rotation.x = S.jaw;
+    lens.scale.y = S.eye; lens.position.x = (vivo ? S.px : 0) * 0.012; lens.position.y = (vivo ? -S.py : 0) * 0.01;
+  }
+  var prima = performance.now(), primaDesk = 0;
+  function giro(ora) {
+    var dt = Math.min(0.05, (ora - prima) / 1000); prima = ora;
+    aggiorna(ora / 1000, dt);
+    if (ora - primaDesk > 83) {   // the small preview runs at 12 fps, like the desktop app
+      primaDesk = ora;
+      renderer.setScissorTest(true); renderer.setViewport(0, 0, 90, 135); renderer.setScissor(0, 0, 90, 135);
+      renderer.clear(); renderer.render(scene, deskCam);
+      deskCtx.clearRect(0, 0, desk.width, desk.height);
+      deskCtx.drawImage(canvas, 0, canvas.height - desk.height, desk.width, desk.height, 0, 0, desk.width, desk.height);
+      renderer.setScissorTest(false); renderer.setViewport(0, 0, W, H);
+    }
+    renderer.render(scene, cam);
+    requestAnimationFrame(giro);
+  }
+  requestAnimationFrame(giro);
+})();
+</script>
+
+</body></html>
