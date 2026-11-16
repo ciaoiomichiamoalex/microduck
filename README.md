@@ -74,6 +74,7 @@ Non c'è niente da configurare: nessun hook, nessuna modifica a `settings.json`.
 ## Carattere
 
 - **Mosse**: una ogni 20–40 secondi, a rotazione. Alcune partono da quello che succede: un terminale finisce e lui fa un saltello, l'ultimo si ferma e fa un backflip di festa, ne nasce uno nuovo e fa un giro.
+- **Pisolino**: salta, in volo porta le gambe in avanti e atterra già seduto, con le gambe distese e le suole verso di te, come si siede il Microduck vero. Poi china il capo e chiude l'occhio. Per svegliarsi fa lo stesso saltello al contrario e torna in piedi.
 - **Puntatore**: la testa segue il mouse su tutto lo schermo; durante una mossa pensa alla mossa. Col mouse fermo da 2,5 secondi torna a guardarsi intorno.
 - **Battute**: circa 150, ti chiamano per nome e usano i numeri veri. Nello stesso giorno non ripete una frase finché ne ha di nuove.
 - **Sera**: dopo le 20, se nessun terminale è in corso, si addormenta; si sveglia appena uno riparte.

@@ -95,7 +95,7 @@ body.sinistra #nuvola { right: auto; left: calc(16px + var(--w)); border-radius:
     renderer = null;
   }
 
-  const S = { modo: 'idle', modoFino: 0, mossa: null, giro: null, spin: 0, parlaFino: 0, px: 0, py: 0, pt: -9, hy: 0, hp: 0, hr: 0, jaw: 0, eye: 1, neck: 0.1, dorme: false, sinistra: false };
+  const S = { modo: 'idle', modoFino: 0, mossa: null, giro: null, spin: 0, parlaFino: 0, px: 0, py: 0, pt: -9, hy: 0, hp: 0, hr: 0, jaw: 0, eye: 1, neck: 0.1, dorme: false, seduto: 0, sonno: 0, sinistra: false };
   let scene, cam, aggiorna = () => {}, toccaPapero = () => false, colora = () => {};
 
   if (renderer) (function () {
@@ -299,13 +299,19 @@ body.sinistra #nuvola { right: auto; left: calc(16px + var(--w)); border-radius:
       });
       foot.add(mesh(rbox(0.2, 0.085, 0.03, 0.008, 0.02), M.footTop, 0, -0.015, -0.125));
       pelvis.add(g);
-      return { thigh, knee, foot };
+      return { thigh, knee, foot, anca: g, lato: side };
     }
     const gambaD = gamba(1), gambaS = gamba(-1);
     // alza: solleva un piede (camminata). piega: +1 accucciato, -1 disteso. punta: punte giù, in aria.
-    function posa(g, alza, piega, punta) {
+    // sed: 0 in piedi, 1 seduto, con le gambe distese in avanti e un po' aperte e le suole verso chi guarda,
+    // come si siede il Microduck vero nel filmato "Sit & stand" di Pollen Robotics.
+    function posa(g, alza, piega, punta, sed) {
       const h = H0 + 0.25 * alza + 0.35 * (piega || 0), k = K0 - 0.35 * alza - 0.6 * (piega || 0);
-      g.thigh.rotation.x = h; g.knee.rotation.x = k; g.foot.rotation.x = -(h + k) + (punta || 0);
+      sed = sed || 0;
+      g.thigh.rotation.x = h + (-Math.PI / 2 - h) * sed;
+      g.knee.rotation.x = k * (1 - sed);
+      g.foot.rotation.x = (-(h + k) + (punta || 0)) * (1 - sed);
+      g.anca.rotation.y = g.lato * APRI * sed;
     }
     // Dove devono stare le anche perché i piedi restino piantati a una certa piega.
     function bacino(piega) {
@@ -322,6 +328,11 @@ body.sinistra #nuvola { right: auto; left: calc(16px + var(--w)); border-radius:
       salto: { dura: 1.15, vola: [0.36, 0.74], alto: 0.55, giri: 0, piega: [[0, 0], [0.26, 1], [0.36, -0.7], [0.56, 0.35], [0.74, -0.5], [0.86, 0.8], [1, 0]] },
       flip: { dura: 1.6, vola: [0.29, 0.78], alto: 0.8, giri: 1, piega: [[0, 0], [0.2, 1], [0.29, -0.8], [0.42, 1], [0.66, 1], [0.78, -0.4], [0.88, 0.9], [1, 0]] },
     };
+    // Dorme (16 nov, validato da Alex sul mockup): una mossa sola. Si accuccia, salta, in volo porta le gambe
+    // in avanti e atterra già seduto; poi china il capo. Per svegliarsi lo stesso saltello al contrario:
+    // si stacca da terra, riporta le gambe sotto e atterra in piedi.
+    const SIEDI = { dura: 1.25, vola: [0.34, 0.8], alto: 0.5 }, ALZATI = { dura: 1.35, vola: [0.3, 0.74], alto: 0.45 };
+    const SEDE_Y = 0.215, APRI = 0.22; // altezza delle anche da seduto (talloni e cosce a terra); quanto apre le gambe
 
     // luce e pavimento: sul desktop resta solo l'ombra sotto i piedi
     scene.add(new THREE.HemisphereLight(0xffffff, 0x8a909c, 0.6));
@@ -386,15 +397,44 @@ body.sinistra #nuvola { right: auto; left: calc(16px + var(--w)); border-radius:
       if (S.giro) { S.giro.p += dt / 3.2; S.spin = 2 * Math.PI * sm(0, 1, S.giro.p); if (S.giro.p >= 1) { S.giro = null; S.spin = 0; } }
       const rel = Math.atan2(Math.sin(yawCam - S.spin), Math.cos(yawCam - S.spin));
       if (modo === 'walk') { w = Math.sin(t * Math.PI * 2 / 0.75); hr = w * 0.05; by = Math.abs(w) * 0.012; }
-      if (modo === 'sleep') { hp = 0.42; nk = 0.24; ey = 0.12; hy = 0.15; by = Math.sin(t * 1.1) * 0.006; }
-      else {
-        hy = clamp(rel * 0.6 + (guarda ? S.px * 0.35 : (calmo ? 0 : Math.sin(t * 0.45) * 0.22)), -0.75, 0.75);
-        hp = clamp(-PITCH * 0.5 + (guarda ? S.py * 0.18 : (calmo ? 0 : Math.sin(t * 0.31) * 0.05)), -0.3, 0.3);
-        if (!calmo) { by += Math.sin(t * 1.9) * 0.006; if (t % 4.3 < 0.12) ey = 0.1; }
-        if (ora < S.parlaFino) { jw = 0.05 + 0.26 * Math.abs(Math.sin(t * 8.5)) * (0.55 + 0.45 * Math.sin(t * 2.1)); hp += Math.sin(t * 4.2) * 0.03; }
+      // Dorme: salta e atterra seduto, poi china il capo e chiude l'occhio. Finito il sonno si rialza con un
+      // saltello. Con "riduci movimento" niente salti: si trova seduto o in piedi e basta.
+      if (!S.mossa && !S.giro) {
+        if (modo === 'sleep' && !S.seduto) { if (riduci) S.seduto = 1; else S.mossa = { tipo: 'siedi', p: 0 }; }
+        else if (modo !== 'sleep' && S.seduto) { if (riduci) S.seduto = 0; else S.mossa = { tipo: 'alzati', p: 0 }; }
       }
-      let piega = 0, punta = 0, giro = 0;
-      if (S.mossa) {
+      S.sonno += ((modo === 'sleep' && S.seduto && !S.mossa ? 1 : 0) - S.sonno) * Math.min(1, dt * 3.5);
+      const sonno = S.sonno;
+      hy = clamp(rel * 0.6 + (guarda ? S.px * 0.35 : (calmo ? 0 : Math.sin(t * 0.45) * 0.22)), -0.75, 0.75);
+      hp = clamp(-PITCH * 0.5 + (guarda ? S.py * 0.18 : (calmo ? 0 : Math.sin(t * 0.31) * 0.05)), -0.3, 0.3);
+      if (!calmo) { by += Math.sin(t * 1.9) * 0.006; if (t % 4.3 < 0.12) ey = 0.1; }
+      if (ora < S.parlaFino && modo !== 'sleep') { jw = 0.05 + 0.26 * Math.abs(Math.sin(t * 8.5)) * (0.55 + 0.45 * Math.sin(t * 2.1)); hp += Math.sin(t * 4.2) * 0.03; }
+      if (sonno > 0.001) {
+        // Da seduto il capo pende un po' meno, così il becco resta sopra le punte dei piedi; respira col collo.
+        hy += (0.12 - hy) * sonno; hp += (0.34 - hp) * sonno; nk += (0.16 + Math.sin(t * 1.1) * 0.012 - nk) * sonno; ey += (0.12 - ey) * sonno;
+      }
+      let piega = 0, punta = 0, giro = 0, sed = S.seduto;
+      if (S.mossa && (S.mossa.tipo === 'siedi' || S.mossa.tipo === 'alzati')) {
+        const giu = S.mossa.tipo === 'siedi', a = giu ? SIEDI : ALZATI;
+        S.mossa.p += dt / a.dura;
+        const ps = Math.min(1, S.mossa.p), qs = clamp((ps - a.vola[0]) / (a.vola[1] - a.vola[0]), 0, 1);
+        su = a.alto * 4 * qs * (1 - qs);
+        jw = Math.max(jw, 0.1 * Math.sin(Math.PI * qs));
+        w = 0; hr = 0;
+        if (giu) {
+          // si accuccia e spinge; in volo le gambe vanno in avanti; atterra sul fondo, un rimbalzino e un cenno
+          piega = chiavi(ps, [[0, 0], [0.24, 1], [a.vola[0], -0.6], [0.55, 0]]);
+          sed = sm(0.1, 0.85, qs);
+          if (ps < a.vola[0]) nk = 0.1 + 0.12 * piega;
+          if (ps > a.vola[1]) { const rs = (ps - a.vola[1]) / (1 - a.vola[1]); su = 0.035 * Math.sin(Math.PI * rs) * (1 - rs); nk += 0.2 * Math.sin(Math.PI * rs) * (1 - rs); }
+        } else {
+          // un cenno per caricare, poi il saltello: le gambe tornano sotto e atterra piegato
+          sed = 1 - sm(0.15, 0.9, qs);
+          piega = chiavi(ps, [[0, 0], [a.vola[1] - 0.14, 0], [a.vola[1], -0.4], [0.87, 0.85], [1, 0]]);
+          if (ps < a.vola[0]) nk += 0.16 * Math.sin(Math.PI * ps / a.vola[0]);
+        }
+        if (S.mossa.p >= 1) { S.mossa = null; S.seduto = giu ? 1 : 0; }
+      } else if (S.mossa) {
         const m = MOSSE[S.mossa.tipo];
         S.mossa.p += dt / m.dura;
         if (S.mossa.p >= 1) S.mossa = null;
@@ -414,8 +454,9 @@ body.sinistra #nuvola { right: auto; left: calc(16px + var(--w)); border-radius:
       root.rotation.set(giro, S.spin, w * 0.07);
       root.position.set(0, su + CY - (CY * cg - CZ * sg), CZ - (CY * sg + CZ * cg));
       const bc = bacino(piega);
-      pelvis.position.y = bc.y + by; pelvis.position.z = bc.z - Z0;
-      posa(gambaD, Math.max(0, w), piega, punta); posa(gambaS, Math.max(0, -w), piega, punta);
+      // In piedi le anche stanno dove le mettono le gambe piegate; da seduto sono giù a terra.
+      pelvis.position.y = bc.y + by + (SEDE_Y - bc.y - by) * sed; pelvis.position.z = (bc.z - Z0) * (1 - sed);
+      posa(gambaD, Math.max(0, w), piega, punta, sed); posa(gambaS, Math.max(0, -w), piega, punta, sed);
       S.hy += (hy - S.hy) * k; S.hp += (hp - S.hp) * k; S.hr += (hr - S.hr) * k; S.neck += (nk - S.neck) * k;
       S.jaw += (jw - S.jaw) * Math.min(1, dt * 18); S.eye += (ey - S.eye) * Math.min(1, dt * 22);
       head.rotation.set(S.hp, S.hy, S.hr); neck.rotation.x = S.neck; jaw.rotation.x = S.jaw;
@@ -442,7 +483,7 @@ body.sinistra #nuvola { right: auto; left: calc(16px + var(--w)); border-radius:
   const caso = (a, b) => a + Math.random() * (b - a);
   const scegli = (a) => a[Math.floor(Math.random() * a.length)];
   function fai(m) {
-    if (!renderer || S.mossa || S.giro) return;
+    if (!renderer || S.mossa || S.giro || S.seduto) return; // da seduto prima si rialza
     if (m === 'saltello') S.mossa = { tipo: 'salto', p: 0 };
     else if (m === 'backflip') S.mossa = { tipo: 'flip', p: 0 };
     else if (m === 'gira') S.giro = { p: 0 };
@@ -450,7 +491,7 @@ body.sinistra #nuvola { right: auto; left: calc(16px + var(--w)); border-radius:
     else if (m === 'dorme') { S.modo = 'sleep'; S.modoFino = Date.now() + 12000; }
   }
   function forseMossa() {
-    if (riduci || S.dorme || S.mossa || S.giro || S.modo !== 'idle' || Date.now() < prossimaMossa) return;
+    if (riduci || S.dorme || S.mossa || S.giro || S.seduto || S.modo !== 'idle' || Date.now() < prossimaMossa) return;
     const m = GIRO[iGiro++ % GIRO.length];
     prossimaMossa = Date.now() + caso(20, 40) * 1000;
     if (m === 'parla') { if (puoParlare()) dici(scegliBattuta(vociDelMomento())); return; }
