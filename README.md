@@ -48,6 +48,7 @@ Rilanciarlo è sicuro: chiude quello acceso e lo riavvia aggiornato. L'app gira 
 Dal menu:
 
 - **Grandezza**: Piccolo, Normale, Grande, Molto grande;
+- **Colore**: i quattro del mockup, cioè Bianco e arancio, Grigio e giallo, Azzurro e arancio, Lilla e giallo;
 - **Statistiche**: sempre visibili, sempre nascoste (resta solo Microduck), o solo col mouse sopra di lui. In quest'ultimo caso compaiono passando su Microduck, restano finché il mouse è su di lui o sulla colonnina, e spariscono un secondo e mezzo dopo;
 - **Chiacchiere**: tante (una battuta ogni 2–5 minuti), poche (ogni 10–20), niente;
 - **Zitto per un'ora**;
@@ -109,6 +110,7 @@ Poi apri `http://127.0.0.1:8765/index.html`. Parametri utili:
 | `?s=2` | lo ingrandisce |
 | `?nudo` | toglie lo sfondo di prova |
 | `?statistiche=mouse` | statistiche solo col mouse sopra di lui (`mai` per nasconderle) |
+| `?colore=grigio` | cambia colore: `arancio`, `grigio`, `azzurro`, `lilla` |
 
 ### Provare la lettura dello stato
 
@@ -122,7 +124,7 @@ oppure `npm run prova`. Stampa `ok` con i terminali e i numeri del PC, o si ferm
 
 In `%APPDATA%\microduck`:
 
-- `preferenze.json`: posizione per ogni monitor, grandezza, chiacchiere, statistiche;
+- `preferenze.json`: posizione per ogni monitor, grandezza, colore, chiacchiere, statistiche;
 - `diario.log`: quando parte, si sospende, si risveglia, perde la pagina o si chiude, e perché. È il primo posto da guardare se Microduck sparisce.
 
 ## Disinstallare
@@ -135,7 +137,7 @@ In `%APPDATA%\microduck`:
 
 `mockup/microduck-3d.html` è l'artefatto da cui viene il modello 3D: Microduck su uno sfondo da studio fotografico, da girare col mouse, con i quattro colori del robot vero e i bottoni per ogni mossa. Si apre con un doppio clic in qualunque browser. Serve internet, perché carica Three.js r128 da cdnjs e i caratteri da Google Fonts.
 
-L'app usa lo stesso modello, con i colori bianco e arancio, e una copia locale di Three.js presa da `node_modules`: la finestra non scarica niente da internet.
+L'app usa lo stesso modello, con gli stessi quattro colori da scegliere nel menu, e una copia locale di Three.js presa da `node_modules`: la finestra non scarica niente da internet.
 
 ## Da dove viene
 

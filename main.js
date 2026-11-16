@@ -13,6 +13,9 @@ const MARGINE = 12;
 const GRANDEZZE = [['Piccolo', 80], ['Normale', 110], ['Grande', 140], ['Molto grande', 180]];
 const LIVELLI = [['tante', 'Tante'], ['poche', 'Poche'], ['niente', 'Niente']];
 const STATISTICHE = [['sempre', 'Sempre visibili'], ['mai', 'Sempre nascoste'], ['mouse', 'Solo col mouse sopra di lui']];
+// I quattro colori del mockup (mockup/microduck-3d.html); i valori stanno nella pagina, in COLORI.
+const COLORI = [['arancio', 'Bianco e arancio'], ['grigio', 'Grigio e giallo'], ['azzurro', 'Azzurro e arancio'], ['lilla', 'Lilla e giallo']];
+function colore() { const c = leggiPref().colore; return COLORI.some(([k]) => k === c) ? c : 'arancio'; }
 const ICONA = path.join(__dirname, 'microduck.ico');
 const ATTIVITA = 'Microduck';
 const DA_SOLO = process.argv.includes('--da-solo');
@@ -210,6 +213,7 @@ function menu() {
     { type: 'separator' },
     { label: visibile ? 'Nascondi Microduck' : 'Mostra Microduck', click: () => (visibile ? nascondi() : mostra()) },
     { label: 'Grandezza', submenu: GRANDEZZE.map(([nome, px]) => ({ label: nome, type: 'radio', checked: px === larghezza, click: () => cambiaGrandezza(px) })) },
+    { label: 'Colore', submenu: COLORI.map(([k, nome]) => ({ label: nome, type: 'radio', checked: k === colore(), click: () => { scriviPref({ colore: k }); if (finestra) finestra.webContents.send('colore', k); aggiornaTray(); } })) },
     { label: 'Statistiche', submenu: STATISTICHE.map(([k, nome]) => ({ label: nome, type: 'radio', checked: k === modoStatistiche(), click: () => cambiaColonnina(k) })) },
     { label: 'Chiacchiere', submenu: LIVELLI.map(([k, nome]) => ({ label: nome, type: 'radio', checked: k === c.livello, click: () => { scriviPref({ chiacchiere: k }); mandaChiacchiere(); } })) },
     { label: zitto ? 'Fallo parlare di nuovo' : "Zitto per un'ora", click: () => { scriviPref({ zittoFino: zitto ? 0 : Date.now() + 3600 * 1000 }); mandaChiacchiere(); } },
@@ -247,7 +251,7 @@ function crea() {
   finestra.setIgnoreMouseEvents(true, { forward: true });
   finestra.loadFile(path.join(__dirname, 'index.html'));
   finestra.once('ready-to-show', () => { finestra.showInactive(); sistema(); });
-  finestra.webContents.on('did-finish-load', () => { finestra.webContents.setZoomFactor(1); avvisa(); mandaChiacchiere(); finestra.webContents.send('colonnina', modoStatistiche()); });
+  finestra.webContents.on('did-finish-load', () => { finestra.webContents.setZoomFactor(1); avvisa(); mandaChiacchiere(); finestra.webContents.send('colonnina', modoStatistiche()); finestra.webContents.send('colore', colore()); });
   finestra.webContents.on('zoom-changed', () => finestra.webContents.setZoomFactor(1));
   finestra.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
   finestra.webContents.on('will-navigate', (e) => e.preventDefault());

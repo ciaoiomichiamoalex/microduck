@@ -16,4 +16,5 @@ contextBridge.exposeInMainWorld('finestraNativa', {
   suChiacchiere: (fn) => ipcRenderer.on('chiacchiere', (_e, c) => fn(c || {})),
   suCursore: (fn) => ipcRenderer.on('cursore', (_e, c) => fn(c || {})),
   suColonnina: (fn) => ipcRenderer.on('colonnina', (_e, m) => fn(String(m))),
+  suColore: (fn) => ipcRenderer.on('colore', (_e, k) => fn(String(k))),
 });
