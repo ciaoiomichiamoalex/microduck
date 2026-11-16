@@ -12,6 +12,7 @@ const MARGINE = 12;
 // Le quattro grandezze di Microduck, in pixel di larghezza; è alto una volta e mezza.
 const GRANDEZZE = [['Piccolo', 80], ['Normale', 110], ['Grande', 140], ['Molto grande', 180]];
 const LIVELLI = [['tante', 'Tante'], ['poche', 'Poche'], ['niente', 'Niente']];
+const STATISTICHE = [['sempre', 'Sempre visibili'], ['mai', 'Sempre nascoste'], ['mouse', 'Solo col mouse sopra di lui']];
 const ICONA = path.join(__dirname, 'microduck.ico');
 const ATTIVITA = 'Microduck';
 const DA_SOLO = process.argv.includes('--da-solo');
@@ -74,14 +75,21 @@ const duckH = () => Math.round(larghezza * 1.5);
 // per la nuvoletta si allarga dalla parte opposta a lui.
 function dimensioni(m) {
   if (m === 'nuvola') return { w: duckW() + 2 * MARGINE + 300, h: Math.max(duckH() + 2 * MARGINE, 230) };
-  const statistiche = leggiPref().colonnina !== false ? Math.round(185 * scala()) : 0;
+  const statistiche = modoStatistiche() !== 'mai' ? Math.round(185 * scala()) : 0;
   return { w: duckW() + 2 * MARGINE + statistiche, h: duckH() + 2 * MARGINE };
 }
 
-// Statistiche accanto a lui, o solo Microduck (14 nov): senza colonnina la finestra a riposo è grande quanto lui.
-function cambiaColonnina(si) {
-  scriviPref({ colonnina: !!si });
-  if (finestra) finestra.webContents.send('colonnina', !!si);
+// Le statistiche accanto a lui: sempre, mai, o solo col mouse sopra di lui (16 nov). Con "mai" la finestra a
+// riposo è grande quanto lui; con "mouse" resta larga, tanto il vuoto lascia passare i clic.
+// Fino al 16 nov la preferenza era vero/falso: true vale "sempre", false "mai".
+function modoStatistiche() {
+  const c = leggiPref().colonnina;
+  if (c === false) return 'mai';
+  return c === 'mai' || c === 'mouse' ? c : 'sempre';
+}
+function cambiaColonnina(m) {
+  scriviPref({ colonnina: m });
+  if (finestra) finestra.webContents.send('colonnina', m);
   if (modo === 'mini') { const d = duck(); const { w, h } = dimensioni('mini'); metti(bordiPer(d.x, d.y, w, h)); }
   sistema();
   aggiornaTray();
@@ -202,7 +210,7 @@ function menu() {
     { type: 'separator' },
     { label: visibile ? 'Nascondi Microduck' : 'Mostra Microduck', click: () => (visibile ? nascondi() : mostra()) },
     { label: 'Grandezza', submenu: GRANDEZZE.map(([nome, px]) => ({ label: nome, type: 'radio', checked: px === larghezza, click: () => cambiaGrandezza(px) })) },
-    { label: 'Statistiche accanto a lui', type: 'checkbox', checked: leggiPref().colonnina !== false, click: (v) => cambiaColonnina(v.checked) },
+    { label: 'Statistiche', submenu: STATISTICHE.map(([k, nome]) => ({ label: nome, type: 'radio', checked: k === modoStatistiche(), click: () => cambiaColonnina(k) })) },
     { label: 'Chiacchiere', submenu: LIVELLI.map(([k, nome]) => ({ label: nome, type: 'radio', checked: k === c.livello, click: () => { scriviPref({ chiacchiere: k }); mandaChiacchiere(); } })) },
     { label: zitto ? 'Fallo parlare di nuovo' : "Zitto per un'ora", click: () => { scriviPref({ zittoFino: zitto ? 0 : Date.now() + 3600 * 1000 }); mandaChiacchiere(); } },
     { type: 'separator' },
@@ -239,7 +247,7 @@ function crea() {
   finestra.setIgnoreMouseEvents(true, { forward: true });
   finestra.loadFile(path.join(__dirname, 'index.html'));
   finestra.once('ready-to-show', () => { finestra.showInactive(); sistema(); });
-  finestra.webContents.on('did-finish-load', () => { finestra.webContents.setZoomFactor(1); avvisa(); mandaChiacchiere(); finestra.webContents.send('colonnina', leggiPref().colonnina !== false); });
+  finestra.webContents.on('did-finish-load', () => { finestra.webContents.setZoomFactor(1); avvisa(); mandaChiacchiere(); finestra.webContents.send('colonnina', modoStatistiche()); });
   finestra.webContents.on('zoom-changed', () => finestra.webContents.setZoomFactor(1));
   finestra.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
   finestra.webContents.on('will-navigate', (e) => e.preventDefault());

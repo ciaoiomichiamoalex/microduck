@@ -7,7 +7,8 @@
 <style>
 /* Microduck: l'interfaccia. Gira nella finestra nativa (trasparente, sempre sopra) oppure, per le prove,
    aperta in un browser qualunque: senza la finestra usa dati finti. Parametri di prova:
-   ?ora=18:31 finge l'ora · ?mossa=backflip parte con una mossa · ?s=2 lo ingrandisce · ?nudo toglie lo sfondo. */
+   ?ora=18:31 finge l'ora · ?mossa=backflip parte con una mossa · ?s=2 lo ingrandisce · ?nudo toglie lo sfondo ·
+   ?statistiche=mouse (o mai) prova le statistiche del menu. */
 :root {
   --s: 1;
   --w: calc(110px * var(--s));
@@ -446,7 +447,8 @@ body.sinistra #nuvola { right: auto; left: calc(16px + var(--w)); border-radius:
   // ======================================================================================================
   // La colonnina
   // ======================================================================================================
-  let stato = null, mostraColonnina = true; // il menu dell'icona può lasciare solo Microduck
+  // Le statistiche, dal menu dell'icona: sempre, mai, o solo col mouse sopra di lui (?statistiche=mouse nel browser).
+  let stato = null, modoColonnina = (!nativa && Q.get('statistiche')) || 'sempre', mouseVicino = false, viaTimer = null;
   const gib = (x) => Math.round(x / 2 ** 30);
   const conti = () => {
     const t = (stato && stato.terminali) || [];
@@ -471,7 +473,8 @@ body.sinistra #nuvola { right: auto; left: calc(16px + var(--w)); border-radius:
   function disegnaColonnina() {
     const c = el('colonnina');
     c.textContent = '';
-    c.hidden = !mostraColonnina || !el('nuvola').hidden;
+    const visibili = modoColonnina === 'sempre' || (modoColonnina === 'mouse' && mouseVicino);
+    c.hidden = !visibili || !el('nuvola').hidden;
     if (!stato) { c.appendChild(pastiglia('muta', null, 'guardo…')); return; }
     const { lav, fer } = conti();
     const nomi = (a) => a.map((x) => x.nome).join(', ');
@@ -707,6 +710,17 @@ body.sinistra #nuvola { right: auto; left: calc(16px + var(--w)); border-radius:
     const r = el('duck').getBoundingClientRect();
     guardaVerso(e.clientX - (r.left + r.width / 2), e.clientY - (r.top + r.height * 0.45));
   });
+  // Statistiche "solo col mouse sopra di lui": compaiono passando su Microduck, restano finché il mouse è su di
+  // lui o sulla colonnina (così si leggono i nomi dei terminali) e spariscono un secondo e mezzo dopo.
+  function vicino(si) {
+    if (si) {
+      clearTimeout(viaTimer); viaTimer = null;
+      if (!mouseVicino) { mouseVicino = true; disegnaColonnina(); }
+    } else if (mouseVicino && !viaTimer) {
+      viaTimer = setTimeout(() => { mouseVicino = false; viaTimer = null; disegnaColonnina(); }, 1500);
+    }
+  }
+  document.addEventListener('mouseleave', () => vicino(false));
   // Le zone trasparenti lasciano passare i clic: sul papero conta il disegno, non il suo riquadro (14 nov,
   // Alex: intorno a lui non si cliccava sotto).
   document.addEventListener('mousemove', (e) => {
@@ -714,13 +728,14 @@ body.sinistra #nuvola { right: auto; left: calc(16px + var(--w)); border-radius:
     const t = document.elementFromPoint(e.clientX, e.clientY);
     const sulPapero = !!(t && t.closest('#duck')) && toccaPapero(e.clientX, e.clientY);
     el('duck').classList.toggle('sopra', sulPapero);
+    vicino(sulPapero || !!(t && t.closest('#colonnina:not([hidden])')));
     if (!nativa) return;
     const dentro = sulPapero || !!(t && t.closest('#nuvola:not([hidden]), #colonnina:not([hidden])'));
     if (dentro !== dentroPrima) { dentroPrima = dentro; nativa.mouse(dentro); }
   });
   if (nativa) {
     nativa.suCursore((c) => guardaVerso(Number(c.dx) || 0, Number(c.dy) || 0));
-    nativa.suColonnina((si) => { mostraColonnina = si; disegnaColonnina(); });
+    nativa.suColonnina((m) => { modoColonnina = m; disegnaColonnina(); });
     document.addEventListener('mouseleave', () => { dentroPrima = false; nativa.mouse(false); });
     nativa.suLato((l) => { S.sinistra = l === 'sinistra'; document.body.classList.toggle('sinistra', S.sinistra); });
     nativa.suScala((s) => document.documentElement.style.setProperty('--s', String(s)));

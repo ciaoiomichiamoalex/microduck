@@ -48,7 +48,7 @@ Rilanciarlo è sicuro: chiude quello acceso e lo riavvia aggiornato. L'app gira 
 Dal menu:
 
 - **Grandezza**: Piccolo, Normale, Grande, Molto grande;
-- **Statistiche accanto a lui**: togliendo la spunta resta solo Microduck;
+- **Statistiche**: sempre visibili, sempre nascoste (resta solo Microduck), o solo col mouse sopra di lui. In quest'ultimo caso compaiono passando su Microduck, restano finché il mouse è su di lui o sulla colonnina, e spariscono un secondo e mezzo dopo;
 - **Chiacchiere**: tante (una battuta ogni 2–5 minuti), poche (ogni 10–20), niente;
 - **Zitto per un'ora**;
 - **Ricarica**: rilegge la pagina;
@@ -108,6 +108,7 @@ Poi apri `http://127.0.0.1:8765/index.html`. Parametri utili:
 | `?mossa=backflip` | parte subito con una mossa: `cammina`, `saltello`, `gira`, `backflip`, `dorme` |
 | `?s=2` | lo ingrandisce |
 | `?nudo` | toglie lo sfondo di prova |
+| `?statistiche=mouse` | statistiche solo col mouse sopra di lui (`mai` per nasconderle) |
 
 ### Provare la lettura dello stato
 
