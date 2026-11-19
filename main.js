@@ -16,6 +16,8 @@ const STATISTICHE = [['sempre', 'Sempre visibili'], ['mai', 'Sempre nascoste'], 
 // I quattro colori del mockup (mockup/microduck-3d.html); i valori stanno nella pagina, in COLORI.
 const COLORI = [['arancio', 'Bianco e arancio'], ['grigio', 'Grigio e giallo'], ['azzurro', 'Azzurro e arancio'], ['lilla', 'Lilla e giallo']];
 function colore() { const c = leggiPref().colore; return COLORI.some(([k]) => k === c) ? c : 'arancio'; }
+// Le mosse da richiamare a mano (19 nov), nell'ordine del mockup. Le esegue la pagina, in richiedi().
+const MOSSE = [['fermo', 'Fermo'], ['cammina', 'Cammina'], ['parla', 'Parla'], ['dorme', 'Dorme'], ['saltello', 'Saltello'], ['backflip', 'Backflip'], ['gira', 'Gira su se stesso']];
 const ICONA = path.join(__dirname, 'microduck.ico');
 const ATTIVITA = 'Microduck';
 const DA_SOLO = process.argv.includes('--da-solo');
@@ -212,6 +214,8 @@ function menu() {
     { label: 'Microduck ' + require('./package.json').version, enabled: false },
     { type: 'separator' },
     { label: visibile ? 'Nascondi Microduck' : 'Mostra Microduck', click: () => (visibile ? nascondi() : mostra()) },
+    // Se è nascosto prima torna visibile: a finestra nascosta la pagina non anima niente.
+    { label: 'Mosse', submenu: MOSSE.map(([k, nome]) => ({ label: nome, click: () => { mostra(); finestra.webContents.send('mossa', k); } })) },
     { label: 'Grandezza', submenu: GRANDEZZE.map(([nome, px]) => ({ label: nome, type: 'radio', checked: px === larghezza, click: () => cambiaGrandezza(px) })) },
     { label: 'Colore', submenu: COLORI.map(([k, nome]) => ({ label: nome, type: 'radio', checked: k === colore(), click: () => { scriviPref({ colore: k }); if (finestra) finestra.webContents.send('colore', k); aggiornaTray(); } })) },
     { label: 'Statistiche', submenu: STATISTICHE.map(([k, nome]) => ({ label: nome, type: 'radio', checked: k === modoStatistiche(), click: () => cambiaColonnina(k) })) },

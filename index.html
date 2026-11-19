@@ -8,7 +8,8 @@
 /* Microduck: l'interfaccia. Gira nella finestra nativa (trasparente, sempre sopra) oppure, per le prove,
    aperta in un browser qualunque: senza la finestra usa dati finti. Parametri di prova:
    ?ora=18:31 finge l'ora · ?mossa=backflip parte con una mossa · ?s=2 lo ingrandisce · ?nudo toglie lo sfondo ·
-   ?statistiche=mouse (o mai) prova le statistiche del menu · ?colore=grigio (azzurro, lilla) cambia colore. */
+   ?statistiche=mouse (o mai) prova le statistiche del menu · ?colore=grigio (azzurro, lilla) cambia colore ·
+   ?fermi tutti i terminali fermi (con ?ora=22:00 dorme) · dalla console mossa('backflip') come dal menu Mosse. */
 :root {
   --s: 1;
   --w: calc(110px * var(--s));
@@ -75,7 +76,8 @@ body.sinistra #nuvola { right: auto; left: calc(16px + var(--w)); border-radius:
   let giroFinto = 0;
   const fonte = nativa || {
     stato: () => {
-      const g = ++giroFinto, st = (n) => ((g + n) % 7 < 3 ? 'in corso' : 'fermo');
+      // ?fermi: tutti fermi, per provare il sonno della sera (?ora=22:00&fermi)
+      const g = ++giroFinto, st = (n) => (!Q.has('fermi') && (g + n) % 7 < 3 ? 'in corso' : 'fermo');
       return Promise.resolve({ ok: true, terminali: [{ nome: 'hugo-64', stato: st(0) }, { nome: 'schevo-5f', stato: st(2) }, { nome: 'source-e1', stato: st(4) }],
         macchina: { cpu: Math.round(45 + 40 * Math.sin(g / 3)), ram_totale: 16 * 2 ** 30, ram_usata: 13 * 2 ** 30, disco_totale: 475 * 2 ** 30, disco_usato: 250 * 2 ** 30 } });
     },
@@ -95,7 +97,7 @@ body.sinistra #nuvola { right: auto; left: calc(16px + var(--w)); border-radius:
     renderer = null;
   }
 
-  const S = { modo: 'idle', modoFino: 0, mossa: null, giro: null, spin: 0, parlaFino: 0, px: 0, py: 0, pt: -9, hy: 0, hp: 0, hr: 0, jaw: 0, eye: 1, neck: 0.1, dorme: false, seduto: 0, sonno: 0, sinistra: false };
+  const S = { modo: 'idle', modoFino: 0, mossa: null, giro: null, spin: 0, parlaFino: 0, px: 0, py: 0, pt: -9, hy: 0, hp: 0, hr: 0, jaw: 0, eye: 1, neck: 0.1, dorme: false, seduto: 0, sonno: 0, dopo: null, sveglio: false, sinistra: false };
   let scene, cam, aggiorna = () => {}, toccaPapero = () => false, colora = () => {};
 
   if (renderer) (function () {
@@ -388,7 +390,7 @@ body.sinistra #nuvola { right: auto; left: calc(16px + var(--w)); border-radius:
       const ora = Date.now(), k = Math.min(1, dt * 7);
       const yawCam = puntaCamera();
       if (S.modoFino && ora > S.modoFino) { S.modo = 'idle'; S.modoFino = 0; }
-      const modo = S.dorme ? 'sleep' : S.modo;
+      const modo = S.dorme && !S.sveglio ? 'sleep' : S.modo; // sveglio: di sera, il tempo di una mossa chiesta dal menu
       let w = 0, hy = 0, hp = 0, hr = 0, jw = 0, ey = 1, nk = 0.1, by = 0, su = 0;
       // Durante una mossa (salto, backflip, giro, camminata, pisolino) pensa alla mossa e non al puntatore.
       const inMossa = !!(S.mossa || S.giro) || modo !== 'idle';
@@ -471,6 +473,9 @@ body.sinistra #nuvola { right: auto; left: calc(16px + var(--w)); border-radius:
     const ora = performance.now(), dt = Math.min(0.1, (ora - prima) / 1000);
     prima = ora;
     const svelto = S.mossa || S.giro || S.modo === 'walk' || Date.now() < S.parlaFino;
+    // La mossa chiesta dal menu parte appena è in piedi e libero; finita quella, di sera torna a dormire.
+    if (S.dopo && !S.seduto && !S.mossa && !S.giro) { fai(S.dopo); S.dopo = null; }
+    if (S.sveglio && !S.dopo && !S.mossa && !S.giro && S.modo === 'idle') S.sveglio = false;
     if (renderer && !document.hidden) { aggiorna(ora / 1000, dt); renderer.render(scene, cam); }
     setTimeout(battito, svelto ? 42 : 83);
   }
@@ -489,6 +494,24 @@ body.sinistra #nuvola { right: auto; left: calc(16px + var(--w)); border-radius:
     else if (m === 'gira') S.giro = { p: 0 };
     else if (m === 'cammina') { S.modo = 'walk'; S.modoFino = Date.now() + 6000; }
     else if (m === 'dorme') { S.modo = 'sleep'; S.modoFino = Date.now() + 12000; }
+  }
+  // Una mossa chiesta dal menu "Mosse" (19 nov). Se è seduto prima si rialza, se è in mezzo a un'altra mossa
+  // aspetta che finisca (vale l'ultima chiesta). Di sera, mentre dorme, resta sveglio il tempo della mossa.
+  // Fermo ferma camminata e pisolino; Dorme da seduto allunga il pisolino.
+  function richiedi(m) {
+    if (!renderer) return;
+    prossimaMossa = Date.now() + caso(20, 40) * 1000;
+    if (m === 'parla') {
+      battuta = null;
+      dici(scegliBattuta(S.dorme && !S.sveglio ? [['notte', { tot: conti().t.length }, 1]] : vociDelMomento()));
+      return;
+    }
+    S.dopo = null;
+    if (m === 'dorme') { S.sveglio = false; S.modo = 'sleep'; S.modoFino = Date.now() + 12000; return; }
+    S.modo = 'idle'; S.modoFino = 0;
+    if (m === 'fermo') return;
+    S.dopo = m;
+    S.sveglio = true;
   }
   function forseMossa() {
     if (riduci || S.dorme || S.mossa || S.giro || S.seduto || S.modo !== 'idle' || Date.now() < prossimaMossa) return;
@@ -792,6 +815,7 @@ body.sinistra #nuvola { right: auto; left: calc(16px + var(--w)); border-radius:
     nativa.suCursore((c) => guardaVerso(Number(c.dx) || 0, Number(c.dy) || 0));
     nativa.suColonnina((m) => { modoColonnina = m; disegnaColonnina(); });
     nativa.suColore((k) => colora(k));
+    nativa.suMossa(richiedi);
     document.addEventListener('mouseleave', () => { dentroPrima = false; nativa.mouse(false); });
     nativa.suLato((l) => { S.sinistra = l === 'sinistra'; document.body.classList.toggle('sinistra', S.sinistra); });
     nativa.suScala((s) => document.documentElement.style.setProperty('--s', String(s)));
@@ -842,6 +866,7 @@ body.sinistra #nuvola { right: auto; left: calc(16px + var(--w)); border-radius:
   battito();
   if (Q.get('mossa')) fai(Q.get('mossa'));
   if (!nativa && Q.get('colore')) colora(Q.get('colore'));
+  if (!nativa) window.mossa = richiedi; // nel browser di prova, dalla console: mossa('backflip')
   setTimeout(() => { if (puoParlare()) dici(scegli(BATTUTE.avvio)); }, 3000);
 })();
 </script>

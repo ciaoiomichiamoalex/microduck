@@ -47,6 +47,7 @@ Rilanciarlo è sicuro: chiude quello acceso e lo riavvia aggiornato. L'app gira 
 
 Dal menu:
 
+- **Mosse**: Fermo, Cammina, Parla, Dorme, Saltello, Backflip, Gira su se stesso, da richiamare quando vuoi. Se è seduto prima si rialza; se sta facendo un'altra mossa aspetta che finisca (vale l'ultima scelta). Di sera, mentre dorme, si sveglia il tempo della mossa e poi torna a dormire. Fermo ferma camminata e pisolino; Dorme fa un pisolino di 12 secondi;
 - **Grandezza**: Piccolo, Normale, Grande, Molto grande;
 - **Colore**: i quattro del mockup, cioè Bianco e arancio, Grigio e giallo, Azzurro e arancio, Lilla e giallo;
 - **Statistiche**: sempre visibili, sempre nascoste (resta solo Microduck), o solo col mouse sopra di lui. In quest'ultimo caso compaiono passando su Microduck, restano finché il mouse è su di lui o sulla colonnina, e spariscono un secondo e mezzo dopo;
@@ -112,6 +113,9 @@ Poi apri `http://127.0.0.1:8765/index.html`. Parametri utili:
 | `?nudo` | toglie lo sfondo di prova |
 | `?statistiche=mouse` | statistiche solo col mouse sopra di lui (`mai` per nasconderle) |
 | `?colore=grigio` | cambia colore: `arancio`, `grigio`, `azzurro`, `lilla` |
+| `?fermi` | tutti i terminali finti fermi; con `?ora=22:00` si addormenta |
+
+Dalla console del browser, `mossa('backflip')` fa quello che fa il menu **Mosse** (`fermo`, `cammina`, `parla`, `dorme`, `saltello`, `backflip`, `gira`).
 
 ### Provare la lettura dello stato
 
